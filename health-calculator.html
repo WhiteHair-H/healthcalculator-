@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>건강 지표 계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f1ec;
+    --surface: #ffffff;
+    --surface2: #f9f7f4;
+    --accent: #2d5a3d;
+    --accent2: #4a8c62;
+    --warn: #c4622d;
+    --info: #2a5c8a;
+    --text: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --text-light: #9e9e9e;
+    --border: #e0dbd3;
+    --border-dark: #c8c1b8;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Header */
+  .header {
+    background: var(--accent);
+    padding: 2rem 0 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -30px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+  }
+  .header h1 {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 1;
+  }
+  .header p {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    font-weight: 300;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Tab nav */
+  .tab-nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 14px 8px 12px;
+    border: none;
+    background: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+  }
+  .tab-btn.active {
+    color: var(--accent);
+    font-weight: 500;
+    border-bottom-color: var(--accent);
+  }
+
+  /* Main content */
+  .main { max-width: 640px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+
+  .section { display: none; animation: fadeIn 0.2s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  /* Input grid */
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .input-grid.single { grid-template-columns: 1fr; }
+  .input-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .field input, .field select {
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent2);
+    background: #fff;
+  }
+  .field input::placeholder { color: var(--text-light); }
+
+  /* Gender toggle */
+  .gender-toggle { display: flex; gap: 6px; }
+  .gender-btn {
+    flex: 1; height: 42px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .gender-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* Calc button */
+  .btn-calc {
+    width: 100%;
+    height: 48px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: -0.01em;
+  }
+  .btn-calc:hover { background: #234a33; }
+  .btn-calc:active { transform: scale(0.99); }
+
+  /* Result area */
+  .result-area { margin-top: 1rem; }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .result-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+  .result-card .rl { font-size: 0.7rem; color: var(--text-light); margin-bottom: 5px; font-weight: 400; }
+  .result-card .rv {
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+  .result-card .rv small { font-size: 0.75rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 400; color: var(--text-muted); margin-left: 2px; }
+  .result-card .rs { font-size: 0.75rem; margin-top: 5px; font-weight: 500; }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-top: 6px;
+  }
+  .badge-good { background: #e8f5e8; color: #2a6b2a; }
+  .badge-warn { background: #fff3e0; color: #c45d0a; }
+  .badge-info { background: #e3f0fb; color: #1a5180; }
+  .badge-danger { background: #fdecea; color: #9c2020; }
+
+  /* Gauge */
+  .gauge-section { margin-bottom: 1rem; }
+  .gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-light);
+    margin-bottom: 4px;
+  }
+  .gauge-segments {
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    position: relative;
+  }
+  .gauge-marker {
+    position: absolute;
+    top: -3px;
+    width: 3px;
+    height: 16px;
+    background: var(--text);
+    border-radius: 2px;
+    transform: translateX(-50%);
+    transition: left 0.5s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
+  }
+
+  /* Tips */
+  .tips {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+  .tips h4 { font-size: 0.75rem; font-weight: 500; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tips p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 4px; }
+  .tips p:last-child { margin-bottom: 0; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 2rem 0; color: var(--text-light); font-size: 0.82rem; }
+  .empty-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.4; }
+
+  /* Section desc */
+  .sec-desc { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.6; }
+
+  /* Formula label */
+  .formula-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .formula-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    border: 1px solid var(--border-dark);
+    background: var(--surface2);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .formula-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Water progress */
+  .water-cups { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; }
+  .cup { width: 28px; height: 28px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border-dark); transition: all 0.2s; }
+  .cup.filled { background: #378add33; border-color: #378add88; }
+  .cup.full { background: #2a5c8a; border-color: #2a5c8a; }
+
+  @media (max-width: 480px) {
+    .input-grid.triple { grid-template-columns: 1fr 1fr; }
+    .result-grid.three { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>건강 지표 계산기</h1>
+  <p>체계적인 건강 관리를 위한 5가지 핵심 지표</p>
+</div>
+
+<nav class="tab-nav" role="tablist">
+  <button class="tab-btn active" onclick="switchTab(0)" role="tab">BMI</button>
+  <button class="tab-btn" onclick="switchTab(1)" role="tab">기초대사량</button>
+  <button class="tab-btn" onclick="switchTab(2)" role="tab">체지방률</button>
+  <button class="tab-btn" onclick="switchTab(3)" role="tab">이상체중</button>
+  <button class="tab-btn" onclick="switchTab(4)" role="tab">수분섭취</button>
+</nav>
+
+<main class="main">
+
+  <!-- ① BMI -->
+  <div class="section active" id="sec-0">
+    <p class="sec-desc">체질량지수(BMI)는 체중(kg)을 키(m)의 제곱으로 나눈 값으로, 비만 여부를 간단히 확인하는 지표입니다.</p>
+    <div class="card">
+      <div class="card-title">신체 정보 입력</div>
+      <div class="input-grid">
+        <div class="field"><label>키 (cm)</label><input type="number" id="bmi-h" placeholder="예: 170" min="100" max="250"></div>
+        <div class="field"><label>체중 (kg)</label><input type="number" id="bmi-w" placeholder="예: 65" min="20" max="300"></div>
+      </div>
+      <button class="btn-calc" onclick="calcBMI()">BMI 계산하기</button>
+    </div>
+    <div class="result-area" id="bmi-result">
+      <div class="empty"><div class="empty-icon">⚖️</div>키와 체중을 입력 후 계산해주세요</div>
+    </div>
+  </div>
+
+  <!-- ② 기초대사량 -->
+  <div class="section" id="sec-1">
+    <p class="sec-desc">기초대사량(BMR)은 생명 유지에 필요한 최소 칼로리입니다. 활동 수준을 곱하면 하루 권장 섭취량(TDEE)을 구할 수 있습니다.</p>
+    <div class="card">
+      <div class="card-title">신체 정보 입력</div>
+      <div style="margin-bottom: 10px;">
+        <div class="field" style="margin-bottom:6px"><label>성별</label></div>
+        <div class="gender-toggle">
+          <button class="gender-btn active" id="bmr-g-m" onclick="setGender('bmr','m')">남성</button>
+          <button class="gender-btn" id="bmr-g-f" onclick="setGender('bmr','f')">여성</button>
+        </div>
+      </div>
+      <div class="input-grid triple">
+        <div class="field"><label>나이 (세)</label><input type="number" id="bmr-a" placeholder="예: 30" min="10" max="100"></div>
+        <div class="field"><label>키 (cm)</label><input type="number" id="bmr-h" placeholder="예: 170" min="100" max="250"></div>
+        <div class="field"><label>체중 (kg)</label><input type="number" id="bmr-w" placeholder="예: 65" min="20" max="300"></div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>활동 수준</label>
+        <select id="bmr-act">
+          <option value="1.2">비활동적 (거의 운동 안 함)</option>
+          <option value="1.375">가볍게 활동 (주 1~3회)</option>
+          <option value="1.55" selected>보통 활동 (주 3~5회)</option>
+          <option value="1.725">활동적 (주 6~7회)</option>
+          <option value="1.9">매우 활동적 (고강도 매일)</option>
+        </select>
+      </div>
+      <button class="btn-calc" onclick="calcBMR()">기초대사량 계산하기</button>
+    </div>
+    <div class="result-area" id="bmr-result">
+      <div class="empty"><div class="empty-icon">🔥</div>정보를 입력 후 계산해주세요</div>
+    </div>
+  </div>
+
+  <!-- ③ 체지방률 -->
+  <div class="section" id="sec-2">
+    <p class="sec-desc">미 해군 공식(US Navy Method)을 사용합니다. 허리·목 둘레로 체지방률을 추정하는 방법으로 줄자만으로 측정 가능합니다.</p>
+    <div class="card">
+      <div class="card-title">신체 정보 입력</div>
+      <div style="margin-bottom: 10px;">
+        <div class="field" style="margin-bottom:6px"><label>성별</label></div>
+        <div class="gender-toggle">
+          <button class="gender-btn active" id="bf-g-m" onclick="setGender('bf','m')">남성</button>
+          <button class="gender-btn" id="bf-g-f" onclick="setGender('bf','f')">여성</button>
+        </div>
+      </div>
+      <div class="input-grid triple">
+        <div class="field"><label>키 (cm)</label><input type="number" id="bf-h" placeholder="170" min="100" max="250"></div>
+        <div class="field"><label>체중 (kg)</label><input type="number" id="bf-w" placeholder="65" min="20" max="300"></div>
+        <div class="field"><label>나이 (세)</label><input type="number" id="bf-a" placeholder="30" min="10" max="100"></div>
+      </div>
+      <div class="input-grid" style="margin-top:10px">
+        <div class="field"><label>허리 둘레 (cm)</label><input type="number" id="bf-waist" placeholder="80" min="40" max="200"></div>
+        <div class="field"><label>목 둘레 (cm)</label><input type="number" id="bf-neck" placeholder="37" min="20" max="80"></div>
+      </div>
+      <div class="field" id="bf-hip-wrap" style="display:none; margin-top:10px">
+        <label>엉덩이 둘레 (cm) <span style="color:var(--warn);font-size:0.7rem">여성 필수</span></label>
+        <input type="number" id="bf-hip" placeholder="95" min="50" max="200">
+      </div>
+      <button class="btn-calc" onclick="calcBF()">체지방률 계산하기</button>
+    </div>
+    <div class="result-area" id="bf-result">
+      <div class="empty"><div class="empty-icon">📐</div>정보를 입력 후 계산해주세요</div>
+    </div>
+  </div>
+
+  <!-- ④ 이상 체중 -->
+  <div class="section" id="sec-3">
+    <p class="sec-desc">다양한 공식으로 산출한 이상 체중과 현재 체중의 차이를 비교합니다. 어떤 기준을 참고할지는 개인 목표에 따라 다릅니다.</p>
+    <div class="card">
+      <div class="card-title">신체 정보 입력</div>
+      <div style="margin-bottom: 10px;">
+        <div class="field" style="margin-bottom:6px"><label>성별</label></div>
+        <div class="gender-toggle">
+          <button class="gender-btn active" id="iw-g-m" onclick="setGender('iw','m')">남성</button>
+          <button class="gender-btn" id="iw-g-f" onclick="setGender('iw','f')">여성</button>
+        </div>
+      </div>
+      <div class="input-grid">
+        <div class="field"><label>키 (cm)</label><input type="number" id="iw-h" placeholder="170" min="100" max="250"></div>
+        <div class="field"><label>현재 체중 (kg)</label><input type="number" id="iw-w" placeholder="65" min="20" max="300"></div>
+      </div>
+      <button class="btn-calc" onclick="calcIdeal()">이상 체중 계산하기</button>
+    </div>
+    <div class="result-area" id="iw-result">
+      <div class="empty"><div class="empty-icon">🎯</div>정보를 입력 후 계산해주세요</div>
+    </div>
+  </div>
+
+  <!-- ⑤ 수분 섭취 -->
+  <div class="section" id="sec-4">
+    <p class="sec-desc">체중과 활동 수준에 따른 하루 권장 수분 섭취량입니다. 음료, 음식의 수분을 모두 포함한 총량 기준입니다.</p>
+    <div class="card">
+      <div class="card-title">신체 정보 입력</div>
+      <div class="input-grid">
+        <div class="field"><label>체중 (kg)</label><input type="number" id="wa-w" placeholder="65" min="20" max="300"></div>
+        <div class="field"><label>나이 (세)</label><input type="number" id="wa-a" placeholder="30" min="10" max="100"></div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>활동 수준</label>
+        <select id="wa-act">
+          <option value="30">낮음 (주로 앉아서 생활)</option>
+          <option value="35" selected>보통 (가벼운 활동 포함)</option>
+          <option value="40">높음 (규칙적 운동 병행)</option>
+          <option value="45">매우 높음 (고강도 운동)</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>기후 / 날씨</label>
+        <select id="wa-weather">
+          <option value="0">보통 (봄·가을)</option>
+          <option value="200">더움 (여름 실내)</option>
+          <option value="400">매우 더움 (여름 야외)</option>
+        </select>
+      </div>
+      <button class="btn-calc" onclick="calcWater()">수분 섭취량 계산하기</button>
+    </div>
+    <div class="result-area" id="wa-result">
+      <div class="empty"><div class="empty-icon">💧</div>정보를 입력 후 계산해주세요</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const gender = { bmr: 'm', bf: 'm', iw: 'm' };
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+  document.querySelectorAll('.section').forEach((s,i) => s.classList.toggle('active', i===idx));
+}
+
+function setGender(ns, val) {
+  gender[ns] = val;
+  document.getElementById(ns+'-g-m').classList.toggle('active', val==='m');
+  document.getElementById(ns+'-g-f').classList.toggle('active', val==='f');
+  if(ns==='bf') document.getElementById('bf-hip-wrap').style.display = val==='f' ? '' : 'none';
+}
+
+function bmiInfo(bmi) {
+  if(bmi < 18.5) return { label:'저체중', badge:'badge-info', tip:'체중이 부족합니다. 균형 잡힌 영양 섭취로 적정 체중에 도달하세요.', color:'#378add' };
+  if(bmi < 23)   return { label:'정상', badge:'badge-good', tip:'건강한 체중 범위입니다. 현재 식습관과 운동 루틴을 유지하세요.', color:'#3b6d11' };
+  if(bmi < 25)   return { label:'과체중', badge:'badge-warn', tip:'정상 범위를 소폭 초과했습니다. 식이 조절과 유산소 운동이 도움됩니다.', color:'#ba7517' };
+  if(bmi < 30)   return { label:'비만 1단계', badge:'badge-danger', tip:'체중 관리가 필요합니다. 전문가와 상담하여 체계적인 계획을 세우세요.', color:'#c4622d' };
+  return { label:'비만 2단계', badge:'badge-danger', tip:'의료 전문가의 도움이 필요할 수 있습니다. 적극적인 체중 관리를 권장합니다.', color:'#9c2020' };
+}
+
+function calcBMI() {
+  const h = +document.getElementById('bmi-h').value;
+  const w = +document.getElementById('bmi-w').value;
+  if(!h || !w || h<100 || w<20) { alert('올바른 키와 체중을 입력해주세요.'); return; }
+  const bmi = w / ((h/100)**2);
+  const info = bmiInfo(bmi);
+  const pct = Math.min(95, Math.max(3, (bmi-10)/30*100));
+  document.getElementById('bmi-result').innerHTML = `
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="rl">BMI 지수</div>
+        <div class="rv">${bmi.toFixed(1)}</div>
+        <span class="status-badge ${info.badge}">${info.label}</span>
+      </div>
+      <div class="result-card">
+        <div class="rl">판정</div>
+        <div class="rv" style="font-size:1.3rem;font-family:'Noto Sans KR',sans-serif">${info.label}</div>
+        <div class="rs" style="color:${info.color};margin-top:6px">WHO 아시아-태평양 기준</div>
+      </div>
+    </div>
+    <div class="gauge-section card">
+      <div class="card-title">구간 분포</div>
+      <div class="gauge-labels">
+        <span>저체중<br>&lt;18.5</span><span>정상<br>18.5~23</span><span>과체중<br>23~25</span><span>비만<br>&gt;25</span>
+      </div>
+      <div style="position:relative;margin-top:4px">
+        <div class="gauge-segments">
+          <div style="flex:2.5;background:#b5d4f4"></div>
+          <div style="flex:3;background:#c0dd97"></div>
+          <div style="flex:1.5;background:#fac775"></div>
+          <div style="flex:2.5;background:#f0997b"></div>
+          <div style="flex:2;background:#f7c1c1"></div>
+        </div>
+        <div class="gauge-marker" id="bmi-marker" style="left:${pct}%"></div>
+      </div>
+    </div>
+    <div class="tips">
+      <h4>건강 조언</h4>
+      <p>${info.tip}</p>
+      <p>정상 체중 범위: ${(22*(h/100)**2).toFixed(1)}kg ~ ${(23*(h/100)**2).toFixed(1)}kg (BMI 22~23 기준)</p>
+    </div>`;
+}
+
+function calcBMR() {
+  const g = gender.bmr;
+  const a = +document.getElementById('bmr-a').value;
+  const h = +document.getElementById('bmr-h').value;
+  const w = +document.getElementById('bmr-w').value;
+  const act = +document.getElementById('bmr-act').value;
+  if(!a||!h||!w) { alert('모든 항목을 입력해주세요.'); return; }
+  const bmr = g==='m'
+    ? 88.362 + 13.397*w + 4.799*h - 5.677*a
+    : 447.593 + 9.247*w + 3.098*h - 4.330*a;
+  const tdee = bmr * act;
+  document.getElementById('bmr-result').innerHTML = `
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="rl">기초대사량 (BMR)</div>
+        <div class="rv">${Math.round(bmr)}<small>kcal</small></div>
+        <div class="rs" style="color:var(--text-muted)">Mifflin-St Jeor 공식</div>
+      </div>
+      <div class="result-card">
+        <div class="rl">일일 권장 칼로리 (TDEE)</div>
+        <div class="rv">${Math.round(tdee)}<small>kcal</small></div>
+        <div class="rs" style="color:var(--text-muted)">활동 수준 반영</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">목적별 칼로리 가이드</div>
+      <div class="result-grid three">
+        <div class="result-card">
+          <div class="rl">체중 감량</div>
+          <div class="rv" style="font-size:1.2rem">${Math.round(tdee-500)}<small>kcal</small></div>
+          <div class="rs" style="color:#c4622d">주 0.5kg 감량</div>
+        </div>
+        <div class="result-card">
+          <div class="rl">체중 유지</div>
+          <div class="rv" style="font-size:1.2rem">${Math.round(tdee)}<small>kcal</small></div>
+          <div class="rs" style="color:#3b6d11">현재 유지</div>
+        </div>
+        <div class="result-card">
+          <div class="rl">근육 증가</div>
+          <div class="rv" style="font-size:1.2rem">${Math.round(tdee+300)}<small>kcal</small></div>
+          <div class="rs" style="color:#2a5c8a">벌킹 기준</div>
+        </div>
+      </div>
+    </div>
+    <div class="tips">
+      <h4>영양 구성 가이드</h4>
+      <p>단백질: ${Math.round(w*1.6)}~${Math.round(w*2.2)}g/일 (체중 1.6~2.2g/kg 기준)</p>
+      <p>탄수화물: 총 칼로리의 45~65%, 지방: 20~35% 권장</p>
+    </div>`;
+}
+
+function calcBF() {
+  const g = gender.bf;
+  const h = +document.getElementById('bf-h').value;
+  const w = +document.getElementById('bf-w').value;
+  const waist = +document.getElementById('bf-waist').value;
+  const neck = +document.getElementById('bf-neck').value;
+  const hip = +document.getElementById('bf-hip').value;
+  if(!h||!waist||!neck) { alert('필수 항목을 입력해주세요.'); return; }
+  if(g==='f'&&!hip) { alert('여성의 경우 엉덩이 둘레를 입력해주세요.'); return; }
+  let bf;
+  if(g==='m') {
+    bf = 86.010*Math.log10(waist-neck) - 70.041*Math.log10(h) + 36.76;
+  } else {
+    bf = 163.205*Math.log10(waist+hip-neck) - 97.684*Math.log10(h) - 78.387;
+  }
+  bf = Math.max(3, Math.min(60, bf));
+  const fatMass = w ? (w * bf/100).toFixed(1) : null;
+  const leanMass = w ? (w * (1-bf/100)).toFixed(1) : null;
+
+  let grade, badge, gColor;
+  if(g==='m'){
+    if(bf<6){grade='필수 지방';badge='badge-info';gColor='#378add';}
+    else if(bf<14){grade='운동선수';badge='badge-good';gColor='#3b6d11';}
+    else if(bf<18){grade='건강';badge='badge-good';gColor='#639922';}
+    else if(bf<25){grade='정상';badge='badge-warn';gColor='#ba7517';}
+    else{grade='비만';badge='badge-danger';gColor='#9c2020';}
+  } else {
+    if(bf<14){grade='필수 지방';badge='badge-info';gColor='#378add';}
+    else if(bf<21){grade='운동선수';badge='badge-good';gColor='#3b6d11';}
+    else if(bf<25){grade='건강';badge='badge-good';gColor='#639922';}
+    else if(bf<32){grade='정상';badge='badge-warn';gColor='#ba7517';}
+    else{grade='비만';badge='badge-danger';gColor='#9c2020';}
+  }
+  document.getElementById('bf-result').innerHTML = `
+    <div class="result-grid three">
+      <div class="result-card">
+        <div class="rl">체지방률</div>
+        <div class="rv">${bf.toFixed(1)}<small>%</small></div>
+        <span class="status-badge ${badge}">${grade}</span>
+      </div>
+      ${fatMass?`<div class="result-card"><div class="rl">체지방량</div><div class="rv">${fatMass}<small>kg</small></div></div>`:''}
+      ${leanMass?`<div class="result-card"><div class="rl">제지방 체중</div><div class="rv">${leanMass}<small>kg</small></div></div>`:''}
+    </div>
+    <div class="tips">
+      <h4>체지방률 기준 (ACE)</h4>
+      ${g==='m'
+        ?'<p>필수 지방 2~5% / 운동선수 6~13% / 건강 14~17% / 정상 18~24% / 비만 25%+</p>'
+        :'<p>필수 지방 10~13% / 운동선수 14~20% / 건강 21~24% / 정상 25~31% / 비만 32%+</p>'}
+      <p style="margin-top:6px">정확한 측정을 위해서는 DEXA 스캔 또는 BIA 기기 사용을 권장합니다.</p>
+    </div>`;
+}
+
+function calcIdeal() {
+  const g = gender.iw;
+  const h = +document.getElementById('iw-h').value;
+  const w = +document.getElementById('iw-w').value;
+  if(!h) { alert('키를 입력해주세요.'); return; }
+  const hm = h/100;
+  const brocaStandard = g==='m' ? (h-100)*0.9 : (h-100)*0.85;
+  const bmi22 = 22*hm*hm;
+  const bmiMin = 18.5*hm*hm;
+  const bmiMax = 23*hm*hm;
+  const diff = w ? (w-bmi22) : null;
+  const diffColor = diff===null?'var(--text)':diff>5?'#9c2020':diff>0?'#ba7517':diff<-5?'#378add':'#3b6d11';
+  document.getElementById('iw-result').innerHTML = `
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="rl">이상 체중 (BMI 22)</div>
+        <div class="rv">${bmi22.toFixed(1)}<small>kg</small></div>
+        <div class="rs" style="color:var(--text-muted)">정상 중간값</div>
+      </div>
+      <div class="result-card">
+        <div class="rl">브로카 공식</div>
+        <div class="rv">${brocaStandard.toFixed(1)}<small>kg</small></div>
+        <div class="rs" style="color:var(--text-muted)">(키-100)×${g==='m'?'0.9':'0.85'}</div>
+      </div>
+    </div>
+    ${diff!==null?`
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="rl">정상 범위</div>
+        <div class="rv" style="font-size:1.15rem">${bmiMin.toFixed(1)} ~ ${bmiMax.toFixed(1)}<small>kg</small></div>
+      </div>
+      <div class="result-card">
+        <div class="rl">이상 체중 대비 차이</div>
+        <div class="rv" style="color:${diffColor}">${diff>0?'+':''}${diff.toFixed(1)}<small>kg</small></div>
+        <div class="rs" style="color:${diffColor}">${Math.abs(diff)<1?'이상 체중에 근접':diff>0?`${diff.toFixed(1)}kg 감량 권장`:`${Math.abs(diff).toFixed(1)}kg 증량 권장`}</div>
+      </div>
+    </div>`:''}
+    <div class="tips">
+      <h4>목표 체중 설정 팁</h4>
+      <p>급격한 체중 변화보다 주 0.3~0.5kg의 점진적 변화가 건강에 안전합니다.</p>
+      <p>근력 운동을 병행하면 체중이 같더라도 체성분이 개선됩니다.</p>
+    </div>`;
+}
+
+function calcWater() {
+  const w = +document.getElementById('wa-w').value;
+  const act = +document.getElementById('wa-act').value;
+  const weather = +document.getElementById('wa-weather').value;
+  const age = +document.getElementById('wa-a').value || 30;
+  if(!w) { alert('체중을 입력해주세요.'); return; }
+  let base = w * act;
+  if(age >= 65) base *= 0.95;
+  const total = base + weather;
+  const bottles500 = (total/500).toFixed(1);
+  const cups = Math.round(total/250);
+  const cupsFilled = Math.min(cups, 16);
+  const cupsHtml = Array.from({length:cupsFilled},(_,i)=>`<div class="cup${i<Math.min(cups,12)?i<Math.round(cups*0.7)?' full':' filled':''}" style="transition-delay:${i*30}ms"></div>`).join('');
+  document.getElementById('wa-result').innerHTML = `
+    <div class="result-grid three">
+      <div class="result-card">
+        <div class="rl">하루 권장 수분</div>
+        <div class="rv">${Math.round(total)}<small>ml</small></div>
+      </div>
+      <div class="result-card">
+        <div class="rl">500ml 병 기준</div>
+        <div class="rv">${bottles500}<small>병</small></div>
+      </div>
+      <div class="result-card">
+        <div class="rl">250ml 컵 기준</div>
+        <div class="rv">${cups}<small>컵</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">하루 목표 시각화 (250ml 컵)</div>
+      <div class="water-cups">${cupsHtml}</div>
+      <div style="font-size:0.72rem;color:var(--text-light);margin-top:6px">진한 색: 우선 채워야 할 컵 / 연한 색: 추가 권장</div>
+    </div>
+    <div class="tips">
+      <h4>수분 섭취 습관 가이드</h4>
+      <p>기상 직후 200~300ml 공복 음수를 습관화하면 신진대사에 도움됩니다.</p>
+      <p>하루 섭취량을 ${Math.round(cups/4)}컵씩 4회로 나눠 아침·점심·오후·저녁에 마시세요.</p>
+      <p>카페인 음료 1잔당 추가로 150ml 정도 더 섭취하는 것을 권장합니다.</p>
+    </div>`;
+}
+</script>
+</body>
+</html>
